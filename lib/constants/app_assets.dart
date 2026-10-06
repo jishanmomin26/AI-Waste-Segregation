@@ -18,7 +18,6 @@ class AppAssets {
   static const String metalIcon = 'assets/icons/metal.png';
   static const String eWasteIcon = 'assets/icons/e_waste.png';
   static const String organicIcon = 'assets/icons/organic.png';
-
   static const String model = 'model/trash_classifier.tflite';
   static const String labels = 'labels/labels.txt';
 }

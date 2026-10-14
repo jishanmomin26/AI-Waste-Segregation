@@ -27,15 +27,15 @@ class _ScanScreenState extends State<ScanScreen> {
     });
 
     try {
-      final imagePath = await _imagePickerService.pickFromGallery();
+      final picked = await _imagePickerService.pickImageFromGallery();
 
       if (!mounted) return;
 
-      if (imagePath != null && imagePath.isNotEmpty) {
+      if (picked != null && picked.bytes.isNotEmpty) {
         Navigator.pushNamed(
           context,
           AppRoutes.imagePreview,
-          arguments: imagePath,
+          arguments: {'imagePath': picked.path, 'imageBytes': picked.bytes},
         );
       }
     } catch (error) {

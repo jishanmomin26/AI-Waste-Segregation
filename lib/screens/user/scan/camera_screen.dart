@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 
@@ -142,6 +144,7 @@ class _CameraScreenState extends State<CameraScreen>
 
     try {
       final XFile image = await controller.takePicture();
+      final Uint8List bytes = await image.readAsBytes();
 
       if (!mounted) {
         return;
@@ -150,7 +153,7 @@ class _CameraScreenState extends State<CameraScreen>
       Navigator.pushNamed(
         context,
         AppRoutes.imagePreview,
-        arguments: image.path,
+        arguments: {'imagePath': image.path, 'imageBytes': bytes},
       );
     } on CameraException {
       if (!mounted) {

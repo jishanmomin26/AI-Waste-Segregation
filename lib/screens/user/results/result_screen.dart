@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../../../constants/app_routes.dart';
@@ -19,6 +20,7 @@ class ResultScreen extends StatefulWidget {
 
 class _ResultScreenState extends State<ResultScreen> {
   late String imagePath;
+  Uint8List? imageBytes;
   late InferenceResult result;
 
   bool _argumentsLoaded = false;
@@ -36,10 +38,21 @@ class _ResultScreenState extends State<ResultScreen> {
 
     if (arguments is Map<String, dynamic>) {
       final dynamic path = arguments['imagePath'];
+      final dynamic bytes = arguments['imageBytes'];
       final dynamic inference = arguments['result'];
 
-      if (path is String && inference is InferenceResult) {
-        imagePath = path;
+      if (inference is InferenceResult) {
+        imagePath = path is String ? path : '';
+        if (bytes is Uint8List && bytes.isNotEmpty) {
+          imageBytes = bytes;
+        } else if (!kIsWeb && imagePath.isNotEmpty) {
+          try {
+            final file = File(imagePath);
+            if (file.existsSync()) {
+              imageBytes = file.readAsBytesSync();
+            }
+          } catch (_) {}
+        }
         result = inference;
         _argumentsLoaded = true;
 
@@ -238,18 +251,49 @@ class _ResultScreenState extends State<ResultScreen> {
         border: Border.all(color: AppColors.border),
       ),
       clipBehavior: Clip.antiAlias,
-      child: Image.file(
+      child: _buildImageWidget(),
+    );
+  }
+
+  Widget _buildImageWidget() {
+    // 1. In-memory bytes (cross-platform: Web, Android, iOS, Desktop)
+    if (imageBytes != null && imageBytes!.isNotEmpty) {
+      return Image.memory(
+        imageBytes!,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) => _buildImagePlaceholder(),
+      );
+    }
+
+    // 2. Native file on mobile/desktop
+    if (!kIsWeb && imagePath.isNotEmpty) {
+      return Image.file(
         File(imagePath),
         fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) {
-          return const Center(
-            child: Icon(
-              Icons.image_not_supported_outlined,
-              size: 52,
-              color: AppColors.textSecondary,
-            ),
-          );
-        },
+        errorBuilder: (context, error, stackTrace) => _buildImagePlaceholder(),
+      );
+    }
+
+    // 3. Web blob/network URL
+    if (kIsWeb &&
+        imagePath.isNotEmpty &&
+        (imagePath.startsWith('blob:') || imagePath.startsWith('http'))) {
+      return Image.network(
+        imagePath,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) => _buildImagePlaceholder(),
+      );
+    }
+
+    return _buildImagePlaceholder();
+  }
+
+  Widget _buildImagePlaceholder() {
+    return const Center(
+      child: Icon(
+        Icons.image_not_supported_outlined,
+        size: 52,
+        color: AppColors.textSecondary,
       ),
     );
   }

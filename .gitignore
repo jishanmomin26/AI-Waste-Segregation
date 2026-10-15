@@ -15,6 +15,11 @@ migrate_working_dir/
 *.env
 server/.env
 
+# Android signing secrets
+**/key.properties
+**/*.keystore
+**/*.jks
+
 # IntelliJ related
 *.iml
 *.ipr

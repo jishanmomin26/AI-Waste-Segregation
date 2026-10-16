@@ -1,20 +1,43 @@
 import 'package:flutter/material.dart';
 
 import '../../../constants/app_routes.dart';
-import '../../../data/dummy_scans.dart';
-import '../../../data/dummy_users.dart';
-import '../../../data/dummy_waste.dart';
+import '../../../services/mock_data_service.dart';
+import '../../../services/scan_history_service.dart';
 import '../../../theme/app_colors.dart';
 import '../../../theme/app_text_styles.dart';
 
-class AdminDashboardScreen extends StatelessWidget {
+class AdminDashboardScreen extends StatefulWidget {
   const AdminDashboardScreen({super.key});
 
   @override
+  State<AdminDashboardScreen> createState() => _AdminDashboardScreenState();
+}
+
+class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
+  @override
+  void initState() {
+    super.initState();
+    MockDataService.instance.addListener(_onDataChanged);
+    ScanHistoryService.instance.addListener(_onDataChanged);
+  }
+
+  @override
+  void dispose() {
+    MockDataService.instance.removeListener(_onDataChanged);
+    ScanHistoryService.instance.removeListener(_onDataChanged);
+    super.dispose();
+  }
+
+  void _onDataChanged() {
+    if (mounted) setState(() {});
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final totalUsers = DummyUsers.users.length;
-    final totalScans = DummyScans.scans.length;
-    final totalCategories = DummyWaste.categories.length;
+    final totalUsers = MockDataService.instance.users.length;
+    final totalScans = ScanHistoryService.instance.scans.length;
+    final totalCategories = MockDataService.instance.categories.length;
+    final totalCenters = MockDataService.instance.centers.length;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -39,9 +62,11 @@ class AdminDashboardScreen extends StatelessWidget {
             const SizedBox(height: 22),
             Text('Overview', style: AppTextStyles.heading3),
             const SizedBox(height: 12),
-            _buildStatsGrid(totalUsers, totalScans, totalCategories),
+            _buildStatsGrid(totalUsers, totalScans, totalCategories, totalCenters),
             const SizedBox(height: 24),
-            _buildSectionHeader('Management', 'View all', () {}),
+            _buildSectionHeader('Management', 'View all', () {
+              Navigator.pushNamed(context, AppRoutes.wasteManagement);
+            }),
             const SizedBox(height: 12),
             _buildManagementGrid(context),
             const SizedBox(height: 24),
@@ -112,7 +137,7 @@ class AdminDashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildStatsGrid(int users, int scans, int categories) {
+  Widget _buildStatsGrid(int users, int scans, int categories, int centers) {
     return Column(
       children: [
         Row(
@@ -146,7 +171,11 @@ class AdminDashboardScreen extends StatelessWidget {
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: _buildStatCard(Icons.location_on_outlined, '4', 'Centers'),
+              child: _buildStatCard(
+                Icons.location_on_outlined,
+                '$centers',
+                'Centers',
+              ),
             ),
           ],
         ),
@@ -336,8 +365,7 @@ class AdminDashboardScreen extends StatelessWidget {
           SizedBox(width: 10),
           Expanded(
             child: Text(
-              'Admin dashboard currently uses demo data. '
-              'Backend and database integration can be connected later.',
+              'Admin dashboard reflects live session data for waste categories, recycling centers, users and scan activity.',
               style: TextStyle(
                 fontSize: 12,
                 height: 1.45,

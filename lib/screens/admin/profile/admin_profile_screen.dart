@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../../../config/admin_config.dart';
 import '../../../constants/app_routes.dart';
+import '../../../services/auth_service.dart';
 import '../../../theme/app_colors.dart';
 import '../../../theme/app_text_styles.dart';
 import '../../../widgets/admin/admin_menu_card.dart';
@@ -92,6 +94,7 @@ class AdminProfileScreen extends StatelessWidget {
   }
 
   Widget _buildProfileHeader() {
+    final adminUser = AuthService.instance.currentUser;
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -117,11 +120,17 @@ class AdminProfileScreen extends StatelessWidget {
 
           const SizedBox(height: 14),
 
-          const Text('Reccly Admin', style: AppTextStyles.heading2),
+          Text(
+            adminUser.name.isNotEmpty ? adminUser.name : 'Reccly Admin',
+            style: AppTextStyles.heading2,
+          ),
 
           const SizedBox(height: 5),
 
-          const Text('admin@reccly.com', style: AppTextStyles.bodyMedium),
+          Text(
+            adminUser.email.isNotEmpty ? adminUser.email : AdminConfig.authorizedAdminEmail,
+            style: AppTextStyles.bodyMedium,
+          ),
 
           const SizedBox(height: 12),
 
@@ -190,6 +199,7 @@ class AdminProfileScreen extends StatelessWidget {
   }
 
   Widget _buildInfoCard() {
+    final adminUser = AuthService.instance.currentUser;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -197,19 +207,19 @@ class AdminProfileScreen extends StatelessWidget {
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: AppColors.border),
       ),
-      child: const Column(
+      child: Column(
         children: [
           _InfoRow(
             icon: Icons.email_outlined,
             title: 'Email',
-            value: 'admin@reccly.com',
+            value: adminUser.email.isNotEmpty ? adminUser.email : AdminConfig.authorizedAdminEmail,
           ),
           _InfoRow(
             icon: Icons.phone_outlined,
             title: 'Phone',
-            value: '+91 98765 00000',
+            value: adminUser.phone.isNotEmpty ? adminUser.phone : '+91 98765 00000',
           ),
-          _InfoRow(
+          const _InfoRow(
             icon: Icons.badge_outlined,
             title: 'Role',
             value: 'Administrator',
@@ -217,7 +227,7 @@ class AdminProfileScreen extends StatelessWidget {
           _InfoRow(
             icon: Icons.calendar_today_outlined,
             title: 'Joined',
-            value: 'September 2026',
+            value: adminUser.joinedDate.isNotEmpty ? adminUser.joinedDate : 'September 2026',
           ),
           _InfoRow(
             icon: Icons.check_circle_outline_rounded,
@@ -291,8 +301,12 @@ class AdminProfileScreen extends StatelessWidget {
               child: const Text('Cancel'),
             ),
             ElevatedButton(
-              onPressed: () {
+              onPressed: () async {
                 Navigator.pop(dialogContext);
+
+                await AuthService.instance.logout();
+
+                if (!context.mounted) return;
 
                 Navigator.pushNamedAndRemoveUntil(
                   context,

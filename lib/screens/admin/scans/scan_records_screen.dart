@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 
 import '../../../constants/app_routes.dart';
-import '../../../data/dummy_scans.dart';
 import '../../../models/scan_history_model.dart';
 import '../../../theme/app_colors.dart';
 import '../../../theme/app_text_styles.dart';
 import '../../../widgets/admin/scan_record_tile.dart';
+
+import '../../../services/scan_history_service.dart';
 
 class ScanRecordsScreen extends StatefulWidget {
   const ScanRecordsScreen({super.key});
@@ -17,23 +18,31 @@ class ScanRecordsScreen extends StatefulWidget {
 class _ScanRecordsScreenState extends State<ScanRecordsScreen> {
   final TextEditingController _searchController = TextEditingController();
 
-  List<ScanHistoryModel> _filteredScans = DummyScans.scans;
+  List<ScanHistoryModel> _filteredScans = [];
 
   String _selectedFilter = 'All';
 
   @override
   void initState() {
     super.initState();
-
+    _filteredScans = ScanHistoryService.instance.scans;
     _searchController.addListener(_filterScans);
+    ScanHistoryService.instance.addListener(_onDataChanged);
+  }
+
+  void _onDataChanged() {
+    if (mounted) {
+      _filterScans();
+    }
   }
 
   void _filterScans() {
     final String query = _searchController.text.trim().toLowerCase();
+    final allScans = ScanHistoryService.instance.scans;
 
     setState(() {
       _filteredScans =
-          DummyScans.scans.where((scan) {
+          allScans.where((scan) {
             final bool matchesSearch =
                 query.isEmpty ||
                 scan.wasteName.toLowerCase().contains(query) ||
@@ -60,6 +69,7 @@ class _ScanRecordsScreenState extends State<ScanRecordsScreen> {
 
   @override
   void dispose() {
+    ScanHistoryService.instance.removeListener(_onDataChanged);
     _searchController.dispose();
     super.dispose();
   }
@@ -70,10 +80,11 @@ class _ScanRecordsScreenState extends State<ScanRecordsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final int totalScans = DummyScans.scans.length;
+    final allScans = ScanHistoryService.instance.scans;
+    final int totalScans = allScans.length;
 
     final int recyclableScans =
-        DummyScans.scans.where((scan) => scan.recyclable).length;
+        allScans.where((scan) => scan.recyclable).length;
 
     final int specialScans = totalScans - recyclableScans;
 

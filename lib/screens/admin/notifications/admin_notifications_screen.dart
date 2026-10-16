@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../../../data/dummy_notifications.dart';
 import '../../../models/notification_model.dart';
+import '../../../services/mock_data_service.dart';
 import '../../../theme/app_colors.dart';
 import '../../../theme/app_text_styles.dart';
 
@@ -16,18 +16,33 @@ class AdminNotificationsScreen extends StatefulWidget {
 class _AdminNotificationsScreenState extends State<AdminNotificationsScreen> {
   String _selectedFilter = 'All';
 
+  @override
+  void initState() {
+    super.initState();
+    MockDataService.instance.addListener(_onDataChanged);
+  }
+
+  @override
+  void dispose() {
+    MockDataService.instance.removeListener(_onDataChanged);
+    super.dispose();
+  }
+
+  void _onDataChanged() {
+    if (mounted) setState(() {});
+  }
+
   List<NotificationModel> get _filteredNotifications {
+    final all = MockDataService.instance.notifications;
     if (_selectedFilter == 'Unread') {
-      return DummyNotifications.notifications
-          .where((notification) => notification.isUnread)
-          .toList();
+      return all.where((notification) => notification.isUnread).toList();
     }
 
-    return DummyNotifications.notifications;
+    return all;
   }
 
   int get _unreadCount {
-    return DummyNotifications.notifications
+    return MockDataService.instance.notifications
         .where((notification) => notification.isUnread)
         .length;
   }
@@ -81,7 +96,7 @@ class _AdminNotificationsScreenState extends State<AdminNotificationsScreen> {
           Expanded(
             child: _filterChip(
               title: 'All',
-              count: DummyNotifications.notifications.length,
+              count: MockDataService.instance.notifications.length,
               selected: _selectedFilter == 'All',
               onTap: () {
                 setState(() {
@@ -179,8 +194,9 @@ class _AdminNotificationsScreenState extends State<AdminNotificationsScreen> {
         return await _showDeleteConfirmation();
       },
       onDismissed: (_) {
+        MockDataService.instance.deleteNotification(notification.id);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Notification removed in demo mode.')),
+          const SnackBar(content: Text('Notification removed.')),
         );
       },
       child: Container(
@@ -278,7 +294,7 @@ class _AdminNotificationsScreenState extends State<AdminNotificationsScreen> {
                 if (value == 'read') {
                   _markAsRead(notification);
                 } else if (value == 'delete') {
-                  _showDeleteMessage();
+                  _deleteNotification(notification);
                 }
               },
               itemBuilder: (context) {
@@ -379,25 +395,31 @@ class _AdminNotificationsScreenState extends State<AdminNotificationsScreen> {
   }
 
   void _markAsRead(NotificationModel notification) {
+    MockDataService.instance.markNotificationAsRead(notification.id);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('"${notification.title}" marked as read in demo mode.'),
+        content: Text('"${notification.title}" marked as read.'),
       ),
     );
   }
 
   void _markAllAsRead() {
+    MockDataService.instance.markAllNotificationsAsRead();
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('All notifications marked as read in demo mode.'),
+        content: Text('All notifications marked as read.'),
       ),
     );
   }
 
-  void _showDeleteMessage() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Notification deleted in demo mode.')),
-    );
+  Future<void> _deleteNotification(NotificationModel notification) async {
+    final confirmed = await _showDeleteConfirmation();
+    if (confirmed && mounted) {
+      MockDataService.instance.deleteNotification(notification.id);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Notification removed.')),
+      );
+    }
   }
 
   Future<bool> _showDeleteConfirmation() async {

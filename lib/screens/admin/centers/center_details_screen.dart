@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../models/recycling_center_model.dart';
+import '../../../services/mock_data_service.dart';
 import '../../../theme/app_colors.dart';
 import '../../../theme/app_text_styles.dart';
 
@@ -64,9 +65,34 @@ class CenterDetailsScreen extends StatelessWidget {
               height: 52,
               child: OutlinedButton.icon(
                 onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Delete center is a frontend demo action.'),
+                  showDialog<void>(
+                    context: context,
+                    builder: (dialogCtx) => AlertDialog(
+                      title: const Text('Delete Center'),
+                      content: Text('Are you sure you want to delete "${center.name}"?'),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(dialogCtx),
+                          child: const Text('Cancel'),
+                        ),
+                        ElevatedButton(
+                          onPressed: () {
+                            Navigator.pop(dialogCtx);
+                            MockDataService.instance.deleteCenter(center.id);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Center "${center.name}" removed successfully.'),
+                              ),
+                            );
+                            Navigator.pop(context);
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.redAccent,
+                            foregroundColor: Colors.white,
+                          ),
+                          child: const Text('Delete'),
+                        ),
+                      ],
                     ),
                   );
                 },

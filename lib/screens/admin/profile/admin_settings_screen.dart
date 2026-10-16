@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../constants/app_routes.dart';
+import '../../../services/auth_service.dart';
 import '../../../theme/app_colors.dart';
 import '../../../theme/app_text_styles.dart';
 import '../../../widgets/admin/admin_menu_card.dart';
@@ -347,8 +348,12 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
               child: const Text('Cancel'),
             ),
             ElevatedButton(
-              onPressed: () {
+              onPressed: () async {
                 Navigator.pop(dialogContext);
+
+                await AuthService.instance.logout();
+
+                if (!mounted) return;
 
                 Navigator.pushNamedAndRemoveUntil(
                   context,

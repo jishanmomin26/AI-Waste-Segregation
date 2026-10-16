@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 
 import '../../../constants/app_routes.dart';
-import '../../../data/dummy_users.dart';
 import '../../../models/user_model.dart';
 import '../../../theme/app_colors.dart';
 import '../../../theme/app_text_styles.dart';
 import '../../../widgets/admin/user_tile.dart';
+
+import '../../../services/mock_data_service.dart';
 
 class UsersScreen extends StatefulWidget {
   const UsersScreen({super.key});
@@ -17,26 +18,34 @@ class UsersScreen extends StatefulWidget {
 class _UsersScreenState extends State<UsersScreen> {
   final TextEditingController _searchController = TextEditingController();
 
-  List<UserModel> _filteredUsers = DummyUsers.users;
+  List<UserModel> _filteredUsers = [];
 
   @override
   void initState() {
     super.initState();
-
+    _filteredUsers = MockDataService.instance.users;
     _searchController.addListener(_filterUsers);
+    MockDataService.instance.addListener(_onDataChanged);
+  }
+
+  void _onDataChanged() {
+    if (mounted) {
+      _filterUsers();
+    }
   }
 
   void _filterUsers() {
     final String query = _searchController.text.trim().toLowerCase();
+    final allUsers = MockDataService.instance.users;
 
     setState(() {
       if (query.isEmpty) {
-        _filteredUsers = DummyUsers.users;
+        _filteredUsers = allUsers;
         return;
       }
 
       _filteredUsers =
-          DummyUsers.users
+          allUsers
               .where(
                 (user) =>
                     user.name.toLowerCase().contains(query) ||
@@ -49,6 +58,7 @@ class _UsersScreenState extends State<UsersScreen> {
 
   @override
   void dispose() {
+    MockDataService.instance.removeListener(_onDataChanged);
     _searchController.dispose();
     super.dispose();
   }
@@ -59,11 +69,12 @@ class _UsersScreenState extends State<UsersScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final allUsers = MockDataService.instance.users;
     final int activeUsers =
-        DummyUsers.users.where((user) => user.active).length;
+        allUsers.where((user) => user.active).length;
 
     final int inactiveUsers =
-        DummyUsers.users.where((user) => !user.active).length;
+        allUsers.where((user) => !user.active).length;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -99,7 +110,7 @@ class _UsersScreenState extends State<UsersScreen> {
               Expanded(
                 child: _UserSummaryCard(
                   title: 'Total',
-                  value: '${DummyUsers.users.length}',
+                  value: '${allUsers.length}',
                   icon: Icons.people_outline_rounded,
                 ),
               ),

@@ -4,14 +4,91 @@ import '../../../models/user_model.dart';
 import '../../../theme/app_colors.dart';
 import '../../../theme/app_text_styles.dart';
 
-class UserDetailsScreen extends StatelessWidget {
+import '../../../services/mock_data_service.dart';
+
+class UserDetailsScreen extends StatefulWidget {
   const UserDetailsScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final Object? argument = ModalRoute.of(context)?.settings.arguments;
+  State<UserDetailsScreen> createState() => _UserDetailsScreenState();
+}
 
-    final UserModel? user = argument is UserModel ? argument : null;
+class _UserDetailsScreenState extends State<UserDetailsScreen> {
+  UserModel? _initialUser;
+
+  @override
+  void initState() {
+    super.initState();
+    MockDataService.instance.addListener(_onDataChanged);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_initialUser == null) {
+      final Object? argument = ModalRoute.of(context)?.settings.arguments;
+      if (argument is UserModel) {
+        _initialUser = argument;
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    MockDataService.instance.removeListener(_onDataChanged);
+    super.dispose();
+  }
+
+  void _onDataChanged() {
+    if (mounted) setState(() {});
+  }
+
+  UserModel? get _currentUser {
+    if (_initialUser == null) return null;
+    try {
+      return MockDataService.instance.users.firstWhere(
+        (u) => u.id == _initialUser!.id,
+      );
+    } catch (_) {
+      return _initialUser;
+    }
+  }
+
+  void _confirmDelete(BuildContext context, UserModel user) {
+    showDialog<void>(
+      context: context,
+      builder:
+          (dialogCtx) => AlertDialog(
+            title: const Text('Delete User'),
+            content: Text('Are you sure you want to remove ${user.name}?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogCtx),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(dialogCtx);
+                  MockDataService.instance.deleteUser(user.id);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('User ${user.name} removed.')),
+                  );
+                  Navigator.pop(context);
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.redAccent,
+                  foregroundColor: Colors.white,
+                ),
+                child: const Text('Delete'),
+              ),
+            ],
+          ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final UserModel? user = _currentUser;
 
     if (user == null) {
       return Scaffold(
@@ -215,6 +292,53 @@ class UserDetailsScreen extends StatelessWidget {
                   ),
                 ),
               ],
+            ),
+          ),
+
+          const SizedBox(height: 14),
+
+          SizedBox(
+            width: double.infinity,
+            height: 48,
+            child: OutlinedButton.icon(
+              onPressed: () {
+                MockDataService.instance.toggleUserStatus(user.id);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      user.active
+                          ? 'Account deactivated successfully.'
+                          : 'Account activated successfully.',
+                    ),
+                  ),
+                );
+              },
+              icon: Icon(
+                user.active
+                    ? Icons.pause_circle_outline_rounded
+                    : Icons.check_circle_outline_rounded,
+              ),
+              label: Text(
+                user.active ? 'Deactivate Account' : 'Activate Account',
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 10),
+
+          SizedBox(
+            width: double.infinity,
+            height: 48,
+            child: TextButton.icon(
+              onPressed: () => _confirmDelete(context, user),
+              icon: const Icon(
+                Icons.delete_outline_rounded,
+                color: Colors.redAccent,
+              ),
+              label: const Text(
+                'Delete User',
+                style: TextStyle(color: Colors.redAccent),
+              ),
             ),
           ),
         ],

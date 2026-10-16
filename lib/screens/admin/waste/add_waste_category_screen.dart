@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../models/waste_model.dart';
+import '../../../services/mock_data_service.dart';
 import '../../../theme/app_colors.dart';
 import '../../../theme/app_text_styles.dart';
 import '../../../widgets/common/app_button.dart';
@@ -35,9 +37,20 @@ class _AddWasteCategoryScreenState extends State<AddWasteCategoryScreen> {
       return;
     }
 
+    final newCat = WasteModel(
+      id: 'waste_${DateTime.now().millisecondsSinceEpoch}',
+      name: _nameController.text.trim(),
+      description: _descriptionController.text.trim(),
+      recyclable: _recyclable,
+      icon: 'recycling',
+      totalScans: 0,
+    );
+
+    MockDataService.instance.addWasteCategory(newCat);
+
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Waste category added successfully in demo mode.'),
+      SnackBar(
+        content: Text('Waste category "${newCat.name}" added successfully.'),
       ),
     );
 

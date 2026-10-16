@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../models/waste_model.dart';
+import '../../../services/mock_data_service.dart';
 import '../../../theme/app_colors.dart';
 import '../../../theme/app_text_styles.dart';
 import '../../../widgets/common/app_button.dart';
@@ -22,6 +23,7 @@ class _EditWasteCategoryScreenState extends State<EditWasteCategoryScreen> {
   bool _recyclable = true;
 
   bool _initialized = false;
+  WasteModel? _currentCategory;
 
   void _initializeCategory(WasteModel category) {
     if (_initialized) {
@@ -29,6 +31,7 @@ class _EditWasteCategoryScreenState extends State<EditWasteCategoryScreen> {
     }
 
     _initialized = true;
+    _currentCategory = category;
 
     _nameController.text = category.name;
     _descriptionController.text = category.description;
@@ -51,11 +54,24 @@ class _EditWasteCategoryScreenState extends State<EditWasteCategoryScreen> {
       return;
     }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Waste category updated successfully in demo mode.'),
-      ),
-    );
+    if (_currentCategory != null) {
+      final updated = WasteModel(
+        id: _currentCategory!.id,
+        name: _nameController.text.trim(),
+        description: _descriptionController.text.trim(),
+        recyclable: _recyclable,
+        icon: _currentCategory!.icon,
+        totalScans: _currentCategory!.totalScans,
+      );
+
+      MockDataService.instance.updateWasteCategory(updated);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Category "${updated.name}" updated successfully.'),
+        ),
+      );
+    }
 
     Navigator.pop(context);
   }

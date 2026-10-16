@@ -26,8 +26,8 @@ class DummyUsers {
     ),
     UserModel(
       id: 'user_003',
-      name: 'Muntesha Sheikh',
-      email: 'muntesha@example.com',
+      name: 'Khizer Sheikh',
+      email: 'khizer@example.com',
       phone: '+91 99887 44556',
       location: 'Sanpada',
       joinedDate: '25 Aug 2026',
@@ -37,8 +37,8 @@ class DummyUsers {
     ),
     UserModel(
       id: 'user_004',
-      name: 'Taufiq Janda',
-      email: 'taufiq@example.com',
+      name: 'salman ',
+      email: 'salman@example.com',
       phone: '+91 91234 56789',
       location: 'Nerul',
       joinedDate: '20 Aug 2026',
@@ -48,8 +48,8 @@ class DummyUsers {
     ),
     UserModel(
       id: 'user_005',
-      name: 'Pirkan Ansari',
-      email: 'pirkan@example.com',
+      name: 'Moin Ansari',
+      email: 'moin@example.com',
       phone: '+91 98765 77889',
       location: 'CBD Belapur',
       joinedDate: '15 Aug 2026',
@@ -59,8 +59,8 @@ class DummyUsers {
     ),
     UserModel(
       id: 'user_006',
-      name: 'Ayesha Khan',
-      email: 'ayesha@example.com',
+      name: 'Arsh Khan',
+      email: 'arsh@example.com',
       phone: '+91 97654 33221',
       location: 'Kharghar',
       joinedDate: '10 Aug 2026',

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../../constants/app_routes.dart';
-import '../../../data/dummy_waste.dart';
 import '../../../models/waste_model.dart';
+import '../../../services/mock_data_service.dart';
 import '../../../theme/app_colors.dart';
 import '../../../theme/app_text_styles.dart';
 
@@ -16,26 +16,34 @@ class WasteManagementScreen extends StatefulWidget {
 class _WasteManagementScreenState extends State<WasteManagementScreen> {
   final TextEditingController _searchController = TextEditingController();
 
-  List<WasteModel> _filteredCategories = DummyWaste.categories;
+  List<WasteModel> _filteredCategories = [];
 
   @override
   void initState() {
     super.initState();
-
+    _filteredCategories = MockDataService.instance.wasteCategories;
     _searchController.addListener(_filterCategories);
+    MockDataService.instance.addListener(_onDataChanged);
+  }
+
+  void _onDataChanged() {
+    if (mounted) {
+      _filterCategories();
+    }
   }
 
   void _filterCategories() {
     final String query = _searchController.text.trim().toLowerCase();
+    final allCategories = MockDataService.instance.wasteCategories;
 
     setState(() {
       if (query.isEmpty) {
-        _filteredCategories = DummyWaste.categories;
+        _filteredCategories = allCategories;
         return;
       }
 
       _filteredCategories =
-          DummyWaste.categories.where((category) {
+          allCategories.where((category) {
             return category.name.toLowerCase().contains(query) ||
                 category.description.toLowerCase().contains(query);
           }).toList();
@@ -44,6 +52,7 @@ class _WasteManagementScreenState extends State<WasteManagementScreen> {
 
   @override
   void dispose() {
+    MockDataService.instance.removeListener(_onDataChanged);
     _searchController.dispose();
     super.dispose();
   }
@@ -98,13 +107,17 @@ class _WasteManagementScreenState extends State<WasteManagementScreen> {
             ElevatedButton(
               onPressed: () {
                 Navigator.pop(dialogContext);
-
+                MockDataService.instance.deleteWasteCategory(category.id);
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text('${category.name} deleted in demo mode.'),
+                    content: Text('${category.name} deleted successfully.'),
                   ),
                 );
               },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.redAccent,
+                foregroundColor: Colors.white,
+              ),
               child: const Text('Delete'),
             ),
           ],
@@ -115,10 +128,11 @@ class _WasteManagementScreenState extends State<WasteManagementScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final int totalCategories = DummyWaste.categories.length;
+    final allCategories = MockDataService.instance.wasteCategories;
+    final int totalCategories = allCategories.length;
 
     final int recyclableCategories =
-        DummyWaste.categories.where((category) => category.recyclable).length;
+        allCategories.where((category) => category.recyclable).length;
 
     final int specialCategories = totalCategories - recyclableCategories;
 

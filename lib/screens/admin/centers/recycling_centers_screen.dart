@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 
 import '../../../constants/app_routes.dart';
-import '../../../data/dummy_centers.dart';
 import '../../../models/recycling_center_model.dart';
 import '../../../theme/app_colors.dart';
 import '../../../theme/app_text_styles.dart';
 import '../../../widgets/admin/center_tile.dart';
 import '../../../widgets/common/app_text_field.dart';
+
+import '../../../services/mock_data_service.dart';
 
 class RecyclingCentersScreen extends StatefulWidget {
   const RecyclingCentersScreen({super.key});
@@ -23,26 +24,34 @@ class _RecyclingCentersScreenState extends State<RecyclingCentersScreen> {
   @override
   void initState() {
     super.initState();
+    _searchController.addListener(_onSearchChanged);
+    MockDataService.instance.addListener(_onDataChanged);
+  }
 
-    _searchController.addListener(() {
-      setState(() {
-        _searchQuery = _searchController.text.trim().toLowerCase();
-      });
+  void _onSearchChanged() {
+    setState(() {
+      _searchQuery = _searchController.text.trim().toLowerCase();
     });
+  }
+
+  void _onDataChanged() {
+    if (mounted) setState(() {});
   }
 
   @override
   void dispose() {
+    MockDataService.instance.removeListener(_onDataChanged);
     _searchController.dispose();
     super.dispose();
   }
 
   List<RecyclingCenterModel> get _filteredCenters {
+    final allCenters = MockDataService.instance.centers;
     if (_searchQuery.isEmpty) {
-      return DummyCenters.centers;
+      return allCenters;
     }
 
-    return DummyCenters.centers.where((center) {
+    return allCenters.where((center) {
       return center.name.toLowerCase().contains(_searchQuery) ||
           center.address.toLowerCase().contains(_searchQuery) ||
           center.acceptedMaterials.any(
@@ -52,11 +61,15 @@ class _RecyclingCentersScreenState extends State<RecyclingCentersScreen> {
   }
 
   int get _openCenters {
-    return DummyCenters.centers.where((center) => center.openNow).length;
+    return MockDataService.instance.centers
+        .where((center) => center.openNow)
+        .length;
   }
 
   int get _closedCenters {
-    return DummyCenters.centers.where((center) => !center.openNow).length;
+    return MockDataService.instance.centers
+        .where((center) => !center.openNow)
+        .length;
   }
 
   @override
@@ -142,7 +155,7 @@ class _RecyclingCentersScreenState extends State<RecyclingCentersScreen> {
         Expanded(
           child: _summaryCard(
             title: 'Total',
-            value: '${DummyCenters.centers.length}',
+            value: '${MockDataService.instance.centers.length}',
             icon: Icons.location_city_rounded,
           ),
         ),

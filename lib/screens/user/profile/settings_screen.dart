@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../constants/app_routes.dart';
+import '../../../services/auth_service.dart';
 import '../../../theme/app_colors.dart';
 import '../../../theme/app_text_styles.dart';
 
@@ -11,10 +14,36 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
+  static const String _prefNotifications = 'pref_notifications';
+  static const String _prefScanReminders = 'pref_scan_reminders';
+  static const String _prefLocation = 'pref_location';
+  static const String _prefDarkMode = 'pref_dark_mode';
+
   bool notificationsEnabled = true;
   bool scanRemindersEnabled = true;
   bool locationEnabled = true;
   bool darkModeEnabled = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPreferences();
+  }
+
+  Future<void> _loadPreferences() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      notificationsEnabled = prefs.getBool(_prefNotifications) ?? true;
+      scanRemindersEnabled = prefs.getBool(_prefScanReminders) ?? true;
+      locationEnabled = prefs.getBool(_prefLocation) ?? true;
+      darkModeEnabled = prefs.getBool(_prefDarkMode) ?? false;
+    });
+  }
+
+  Future<void> _savePreference(String key, bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(key, value);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -41,6 +70,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               setState(() {
                 notificationsEnabled = value;
               });
+              _savePreference(_prefNotifications, value);
             },
           ),
 
@@ -55,6 +85,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               setState(() {
                 scanRemindersEnabled = value;
               });
+              _savePreference(_prefScanReminders, value);
             },
           ),
 
@@ -69,6 +100,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               setState(() {
                 locationEnabled = value;
               });
+              _savePreference(_prefLocation, value);
             },
           ),
 
@@ -83,13 +115,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
               setState(() {
                 darkModeEnabled = value;
               });
+              _savePreference(_prefDarkMode, value);
 
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(
                     value
-                        ? 'Dark Mode enabled for this demo.'
-                        : 'Light Mode enabled.',
+                        ? 'Dark mode preference saved.'
+                        : 'Light mode preference saved.',
                   ),
                 ),
               );
@@ -109,7 +142,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               _showInfoDialog(
                 title: 'Language',
                 message:
-                    'Language selection will be available in a future version.',
+                    'Language selection will be available in a future version. Defaulting to English.',
               );
             },
           ),
@@ -124,7 +157,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               _showInfoDialog(
                 title: 'Privacy',
                 message:
-                    'Your personal information is used only within the Reccly application.',
+                    'Your personal data is encrypted and stored locally on your device for demo sessions.',
               );
             },
           ),
@@ -152,7 +185,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _buildActionCard(
             icon: Icons.logout_rounded,
             title: 'Log Out',
-            subtitle: 'Sign out from your account',
+            subtitle: 'Sign out from your account and clear saved session',
             iconColor: AppColors.error,
             onTap: _showLogoutDialog,
           ),
@@ -182,9 +215,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               ),
               const SizedBox(height: 3),
-              Text('Smart Recycling', style: AppTextStyles.bodySmall),
+              const Text('Smart Recycling', style: AppTextStyles.bodySmall),
               const SizedBox(height: 3),
-              Text('Version 1.0.0', style: AppTextStyles.labelSmall),
+              const Text('Version 1.0.0', style: AppTextStyles.labelSmall),
             ],
           ),
         ],
@@ -326,7 +359,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
       builder: (dialogContext) {
         return AlertDialog(
           title: const Text('Log Out'),
-          content: const Text('Are you sure you want to log out?'),
+          content: const Text(
+            'Are you sure you want to log out? Your session will be ended and you will need to log in again.',
+          ),
           actions: [
             TextButton(
               onPressed: () {
@@ -335,12 +370,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
               child: const Text('Cancel'),
             ),
             ElevatedButton(
-              onPressed: () {
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.error,
+                foregroundColor: Colors.white,
+              ),
+              onPressed: () async {
                 Navigator.pop(dialogContext);
+
+                await AuthService.instance.logout();
+
+                if (!mounted) return;
 
                 Navigator.pushNamedAndRemoveUntil(
                   context,
-                  '/role-selection',
+                  AppRoutes.roleSelection,
                   (route) => false,
                 );
               },

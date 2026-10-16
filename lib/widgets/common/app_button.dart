@@ -8,6 +8,7 @@ class AppButton extends StatelessWidget {
   final VoidCallback onPressed;
   final IconData? icon;
   final bool outlined;
+  final bool isLoading;
 
   const AppButton({
     super.key,
@@ -15,6 +16,7 @@ class AppButton extends StatelessWidget {
     required this.onPressed,
     this.icon,
     this.outlined = false,
+    this.isLoading = false,
   });
 
   @override
@@ -23,13 +25,8 @@ class AppButton extends StatelessWidget {
       return SizedBox(
         width: double.infinity,
         height: 52,
-        child: OutlinedButton.icon(
-          onPressed: onPressed,
-          icon: icon != null ? Icon(icon) : const SizedBox.shrink(),
-          label: Text(
-            text,
-            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
-          ),
+        child: OutlinedButton(
+          onPressed: isLoading ? null : onPressed,
           style: OutlinedButton.styleFrom(
             foregroundColor: AppColors.primary,
             side: const BorderSide(color: AppColors.primary),
@@ -37,6 +34,32 @@ class AppButton extends StatelessWidget {
               borderRadius: BorderRadius.circular(14),
             ),
           ),
+          child: isLoading
+              ? const SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.2,
+                    color: AppColors.primary,
+                  ),
+                )
+              : Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (icon != null) ...[
+                      Icon(icon, size: 20),
+                      const SizedBox(width: 8),
+                    ],
+                    Text(
+                      text,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
         ),
       );
     }
@@ -44,21 +67,37 @@ class AppButton extends StatelessWidget {
     return SizedBox(
       width: double.infinity,
       height: 52,
-      child: ElevatedButton.icon(
-        onPressed: onPressed,
-        icon:
-            icon != null
-                ? Icon(icon, color: Colors.white)
-                : const SizedBox.shrink(),
-        label: Text(text, style: AppTextStyles.button),
+      child: ElevatedButton(
+        onPressed: isLoading ? null : onPressed,
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primary,
           foregroundColor: Colors.white,
+          disabledBackgroundColor: AppColors.primary.withValues(alpha: 0.6),
           elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
           ),
         ),
+        child: isLoading
+            ? const SizedBox(
+                width: 22,
+                height: 22,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.2,
+                  color: Colors.white,
+                ),
+              )
+            : Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (icon != null) ...[
+                    Icon(icon, color: Colors.white, size: 20),
+                    const SizedBox(width: 8),
+                  ],
+                  Text(text, style: AppTextStyles.button),
+                ],
+              ),
       ),
     );
   }

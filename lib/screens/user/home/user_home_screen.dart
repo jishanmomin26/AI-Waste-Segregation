@@ -1,18 +1,46 @@
 import 'package:flutter/material.dart';
 
 import '../../../constants/app_routes.dart';
-import '../../../data/dummy_profile.dart';
-import '../../../data/dummy_scans.dart';
+import '../../../models/scan_history_model.dart';
+import '../../../models/user_profile_model.dart';
+import '../../../services/auth_service.dart';
+import '../../../services/scan_history_service.dart';
 import '../../../theme/app_colors.dart';
 import '../../../theme/app_text_styles.dart';
 
-class UserHomeScreen extends StatelessWidget {
+class UserHomeScreen extends StatefulWidget {
   const UserHomeScreen({super.key});
 
   @override
+  State<UserHomeScreen> createState() => _UserHomeScreenState();
+}
+
+class _UserHomeScreenState extends State<UserHomeScreen> {
+  @override
+  void initState() {
+    super.initState();
+    AuthService.instance.addListener(_onStateChanged);
+    ScanHistoryService.instance.addListener(_onStateChanged);
+  }
+
+  @override
+  void dispose() {
+    AuthService.instance.removeListener(_onStateChanged);
+    ScanHistoryService.instance.removeListener(_onStateChanged);
+    super.dispose();
+  }
+
+  void _onStateChanged() {
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final user = DummyProfile.currentUser;
-    final recentScans = DummyScans.scans.take(3).toList();
+    final UserProfileModel user = AuthService.instance.currentUser;
+    final List<ScanHistoryModel> recentScans =
+        ScanHistoryService.instance.scans.take(3).toList();
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -20,13 +48,14 @@ class UserHomeScreen extends StatelessWidget {
         child: RefreshIndicator(
           color: AppColors.primary,
           onRefresh: () async {
-            await Future.delayed(const Duration(milliseconds: 500));
+            await Future.delayed(const Duration(milliseconds: 300));
+            if (mounted) setState(() {});
           },
           child: ListView(
             physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
             children: [
-              _buildHeader(context, user.name),
+              _buildHeader(context, user.displayName),
               const SizedBox(height: 24),
               _buildHeroCard(context),
               const SizedBox(height: 24),
@@ -42,17 +71,59 @@ class UserHomeScreen extends StatelessWidget {
                 Navigator.pushNamed(context, AppRoutes.history);
               }),
               const SizedBox(height: 12),
-              ...recentScans.map(
-                (scan) => Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
-                  child: _buildRecentScan(context, scan),
+              if (recentScans.isEmpty)
+                _buildEmptyRecentScans(context)
+              else
+                ...recentScans.map(
+                  (scan) => Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: _buildRecentScan(context, scan),
+                  ),
                 ),
-              ),
               const SizedBox(height: 14),
               _buildLearningBanner(context),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyRecentScans(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        children: [
+          const Icon(
+            Icons.camera_alt_outlined,
+            size: 38,
+            color: AppColors.textSecondary,
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'No scans yet',
+            style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'Scan your first item to earn Eco Points!',
+            style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 12),
+          TextButton.icon(
+            onPressed: () {
+              Navigator.pushNamed(context, AppRoutes.scan);
+            },
+            icon: const Icon(Icons.qr_code_scanner_rounded),
+            label: const Text('Start Scanning'),
+          ),
+        ],
       ),
     );
   }
@@ -63,7 +134,7 @@ class UserHomeScreen extends StatelessWidget {
         Container(
           width: 48,
           height: 48,
-          decoration: BoxDecoration(
+          decoration: const BoxDecoration(
             color: AppColors.primaryLight,
             shape: BoxShape.circle,
           ),
@@ -78,9 +149,12 @@ class UserHomeScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Good day 👋', style: AppTextStyles.bodySmall),
+              const Text('Good day 👋', style: AppTextStyles.bodySmall),
               const SizedBox(height: 2),
-              Text(userName, style: AppTextStyles.heading3),
+              Text(
+                userName.isEmpty ? 'Eco Recycler' : userName,
+                style: AppTextStyles.heading3,
+              ),
             ],
           ),
         ),
@@ -264,7 +338,7 @@ class UserHomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildEcoStats(user) {
+  Widget _buildEcoStats(UserProfileModel user) {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
@@ -314,7 +388,7 @@ class UserHomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildRecentScan(BuildContext context, scan) {
+  Widget _buildRecentScan(BuildContext context, ScanHistoryModel scan) {
     return InkWell(
       onTap: () {
         Navigator.pushNamed(context, AppRoutes.scanDetails, arguments: scan);

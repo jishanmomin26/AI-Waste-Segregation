@@ -1,18 +1,38 @@
 import 'package:flutter/material.dart';
 
 import '../../../constants/app_routes.dart';
-import '../../../data/dummy_profile.dart';
+import '../../../models/user_profile_model.dart';
+import '../../../services/auth_service.dart';
 import '../../../theme/app_colors.dart';
 import '../../../theme/app_text_styles.dart';
-import 'edit_profile_screen.dart';
-import 'settings_screen.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
 
   @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  @override
+  void initState() {
+    super.initState();
+    AuthService.instance.addListener(_onProfileChanged);
+  }
+
+  @override
+  void dispose() {
+    AuthService.instance.removeListener(_onProfileChanged);
+    super.dispose();
+  }
+
+  void _onProfileChanged() {
+    if (mounted) setState(() {});
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final user = DummyProfile.currentUser;
+    final UserProfileModel user = AuthService.instance.currentUser;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -22,10 +42,7 @@ class ProfileScreen extends StatelessWidget {
           IconButton(
             tooltip: 'Settings',
             onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const SettingsScreen()),
-              );
+              Navigator.pushNamed(context, AppRoutes.settings);
             },
             icon: const Icon(Icons.settings_outlined),
           ),
@@ -65,7 +82,7 @@ class ProfileScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 14),
                 Text(
-                  user.name,
+                  user.displayName,
                   style: AppTextStyles.heading2.copyWith(color: Colors.white),
                 ),
                 const SizedBox(height: 4),
@@ -143,7 +160,7 @@ class ProfileScreen extends StatelessWidget {
           _infoCard(
             icon: Icons.person_outline_rounded,
             title: 'Name',
-            value: user.name,
+            value: user.name.isEmpty ? 'Not set' : user.name,
           ),
 
           const SizedBox(height: 10),
@@ -188,10 +205,7 @@ class ProfileScreen extends StatelessWidget {
             title: 'Edit Profile',
             subtitle: 'Update your personal information',
             onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const EditProfileScreen()),
-              );
+              Navigator.pushNamed(context, AppRoutes.editProfile);
             },
           ),
 
@@ -222,12 +236,9 @@ class ProfileScreen extends StatelessWidget {
           _menuCard(
             icon: Icons.settings_outlined,
             title: 'Settings',
-            subtitle: 'Manage your app preferences',
+            subtitle: 'Manage your app preferences and logout',
             onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const SettingsScreen()),
-              );
+              Navigator.pushNamed(context, AppRoutes.settings);
             },
           ),
 

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../data/dummy_profile.dart';
+import '../../../services/auth_service.dart';
 import '../../../theme/app_colors.dart';
 import '../../../theme/app_text_styles.dart';
 import '../../../widgets/common/app_button.dart';
@@ -19,11 +19,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   late final TextEditingController phoneController;
   late final TextEditingController locationController;
 
+  bool _isSaving = false;
+
   @override
   void initState() {
     super.initState();
 
-    final user = DummyProfile.currentUser;
+    final user = AuthService.instance.currentUser;
 
     nameController = TextEditingController(text: user.name);
     emailController = TextEditingController(text: user.email);
@@ -40,14 +42,53 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     super.dispose();
   }
 
-  void _saveProfile() {
+  Future<void> _saveProfile() async {
     FocusScope.of(context).unfocus();
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Profile updated successfully.')),
-    );
+    final name = nameController.text.trim();
+    final email = emailController.text.trim();
+    final phone = phoneController.text.trim();
+    final location = locationController.text.trim();
 
-    Navigator.pop(context);
+    if (name.isEmpty || email.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Name and email cannot be empty.')),
+      );
+      return;
+    }
+
+    setState(() {
+      _isSaving = true;
+    });
+
+    try {
+      await AuthService.instance.updateProfile(
+        name: name,
+        email: email,
+        phone: phone,
+        location: location,
+      );
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Profile updated successfully.')),
+      );
+
+      Navigator.pop(context);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to update profile.')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSaving = false;
+        });
+      }
+    }
   }
 
   @override
@@ -83,7 +124,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
                     content: Text(
-                      'Profile photo selection will be available later.',
+                      'Profile avatar change will be supported with storage upload in a future update.',
                     ),
                   ),
                 );
@@ -153,7 +194,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           AppButton(
             text: 'Save Changes',
             icon: Icons.check_rounded,
-            onPressed: _saveProfile,
+            isLoading: _isSaving,
+            onPressed: _isSaving ? () {} : _saveProfile,
           ),
 
           const SizedBox(height: 12),

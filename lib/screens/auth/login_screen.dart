@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../../config/admin_config.dart';
 import '../../constants/app_routes.dart';
+import '../../services/auth_service.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../widgets/common/app_button.dart';
@@ -18,6 +20,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _passwordController = TextEditingController();
 
   bool _obscurePassword = true;
+  bool _isLoading = false;
   String _role = 'user';
 
   @override
@@ -38,29 +41,68 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  void _login() {
+  Future<void> _login() async {
     FocusScope.of(context).unfocus();
 
-    if (_emailController.text.trim().isEmpty ||
-        _passwordController.text.trim().isEmpty) {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+
+    if (email.isEmpty || password.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter email and password')),
+        const SnackBar(content: Text('Please enter both email and password')),
       );
       return;
     }
 
-    if (_role == 'admin') {
-      Navigator.pushNamedAndRemoveUntil(
-        context,
-        AppRoutes.adminMain,
-        (route) => false,
+    if (!email.contains('@') || !email.contains('.')) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter a valid email address')),
       );
-    } else {
-      Navigator.pushNamedAndRemoveUntil(
-        context,
-        AppRoutes.userMain,
-        (route) => false,
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final result = await AuthService.instance.login(
+        email: email,
+        password: password,
+        role: _role,
       );
+
+      if (!mounted) return;
+
+      if (result.success) {
+        if (_role == 'admin') {
+          Navigator.pushNamedAndRemoveUntil(
+            context,
+            AppRoutes.adminMain,
+            (route) => false,
+          );
+        } else {
+          Navigator.pushNamedAndRemoveUntil(
+            context,
+            AppRoutes.userMain,
+            (route) => false,
+          );
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              result.errorMessage ?? 'Login failed. Please try again.',
+            ),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -124,7 +166,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
               AppTextField(
                 controller: _emailController,
-                hintText: 'Enter your email',
+                hintText: isAdmin ? AdminConfig.authorizedAdminEmail : 'Enter your email',
                 prefixIcon: Icons.email_outlined,
                 keyboardType: TextInputType.emailAddress,
               ),
@@ -171,7 +213,8 @@ class _LoginScreenState extends State<LoginScreen> {
               AppButton(
                 text: isAdmin ? 'Login as Admin' : 'Login',
                 icon: Icons.login_rounded,
-                onPressed: _login,
+                isLoading: _isLoading,
+                onPressed: _isLoading ? () {} : _login,
               ),
 
               const SizedBox(height: 25),
@@ -196,8 +239,9 @@ class _LoginScreenState extends State<LoginScreen> {
               if (isAdmin)
                 Center(
                   child: Text(
-                    'Administrator access',
+                    'Administrator access: credentials persist across app restarts.',
                     style: AppTextStyles.caption,
+                    textAlign: TextAlign.center,
                   ),
                 ),
             ],

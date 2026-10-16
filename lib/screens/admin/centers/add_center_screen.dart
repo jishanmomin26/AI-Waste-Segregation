@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../models/recycling_center_model.dart';
+import '../../../services/mock_data_service.dart';
 import '../../../theme/app_colors.dart';
 import '../../../theme/app_text_styles.dart';
 import '../../../widgets/common/app_button.dart';
@@ -54,8 +56,36 @@ class _AddCenterScreenState extends State<AddCenterScreen> {
       return;
     }
 
+    final newCenter = RecyclingCenterModel(
+      id: 'center_${DateTime.now().millisecondsSinceEpoch}',
+      name: _nameController.text.trim(),
+      address: _addressController.text.trim(),
+      distance: _distanceController.text.trim().isEmpty
+          ? '1.0 km'
+          : _distanceController.text.trim(),
+      timing: _timingController.text.trim(),
+      phone: _phoneController.text.trim().isEmpty
+          ? '+1 555-0100'
+          : _phoneController.text.trim(),
+      acceptedMaterials: _materialsController.text.trim().isEmpty
+          ? const ['Plastic', 'Paper', 'Glass']
+          : _materialsController.text
+              .split(',')
+              .map((e) => e.trim())
+              .where((e) => e.isNotEmpty)
+              .toList(),
+      openNow: _openNow,
+      description: _descriptionController.text.trim().isEmpty
+          ? 'Recycling collection center'
+          : _descriptionController.text.trim(),
+    );
+
+    MockDataService.instance.addCenter(newCenter);
+
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Recycling center added successfully.')),
+      SnackBar(
+        content: Text('Recycling center "${newCenter.name}" added successfully.'),
+      ),
     );
 
     Navigator.pop(context);

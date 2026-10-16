@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../constants/app_routes.dart';
+import '../../services/auth_service.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../widgets/common/app_button.dart';
@@ -21,6 +22,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -31,31 +33,77 @@ class _RegisterScreenState extends State<RegisterScreen> {
     super.dispose();
   }
 
-  void _register() {
+  Future<void> _register() async {
     FocusScope.of(context).unfocus();
 
-    if (_nameController.text.trim().isEmpty ||
-        _emailController.text.trim().isEmpty ||
-        _passwordController.text.trim().isEmpty ||
-        _confirmPasswordController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Please fill all fields')));
+    final name = _nameController.text.trim();
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+    final confirmPassword = _confirmPasswordController.text.trim();
+
+    if (name.isEmpty || email.isEmpty || password.isEmpty || confirmPassword.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please fill all fields')),
+      );
       return;
     }
 
-    if (_passwordController.text != _confirmPasswordController.text) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Passwords do not match')));
+    if (!email.contains('@') || !email.contains('.')) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter a valid email address')),
+      );
       return;
     }
 
-    Navigator.pushNamedAndRemoveUntil(
-      context,
-      AppRoutes.userMain,
-      (route) => false,
-    );
+    if (password.length < 6) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Password must be at least 6 characters')),
+      );
+      return;
+    }
+
+    if (password != confirmPassword) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Passwords do not match')),
+      );
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final result = await AuthService.instance.register(
+        name: name,
+        email: email,
+        password: password,
+      );
+
+      if (!mounted) return;
+
+      if (result.success) {
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          AppRoutes.userMain,
+          (route) => false,
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              result.errorMessage ?? 'Registration failed. Please try again.',
+            ),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   @override
@@ -118,7 +166,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
               AppTextField(
                 controller: _passwordController,
-                hintText: 'Create a password',
+                hintText: 'Create a password (min 6 chars)',
                 prefixIcon: Icons.lock_outline_rounded,
                 obscureText: _obscurePassword,
                 suffixIcon: IconButton(
@@ -165,14 +213,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
               AppButton(
                 text: 'Create Account',
                 icon: Icons.person_add_alt_1_rounded,
-                onPressed: _register,
+                isLoading: _isLoading,
+                onPressed: _isLoading ? () {} : _register,
               ),
 
               const SizedBox(height: 18),
 
               Center(
                 child: Text(
-                  'By creating an account, you agree to our terms.',
+                  'By creating an account, your session will persist on this device.',
                   style: AppTextStyles.caption,
                   textAlign: TextAlign.center,
                 ),
